@@ -49,7 +49,7 @@ def main():
         img = detector.find_hands(img)
         landmark_positions = detector.find_position(img, draw=False)
         if len(landmark_positions) != 0:
-            print(landmark_positions[4])
+            print(landmark_positions[4])    # thumb tip position
 
         curr_time = time.time()
         fps = 1 / (curr_time - prev_time)
