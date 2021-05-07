@@ -1,6 +1,9 @@
 import pygame as pg
 vec = pg.math.Vector2
 
+# Main
+MAP_NAME = 'level1.tmx'
+
 # Define some colors
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
