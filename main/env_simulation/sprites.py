@@ -1,5 +1,6 @@
+import queue
+import threading
 import time
-
 import pygame as pg
 from random import uniform, choice, randint, random
 from settings import *
@@ -7,6 +8,8 @@ from main import collide_hit_rect
 import pytweening as tween
 from itertools import chain, cycle
 vec = pg.math.Vector2
+
+from client import connect_to_server, receive_commands_from_server
 
 
 def collide_with_walls(sprite, group, dir):
@@ -61,6 +64,50 @@ class Player(pg.sprite.Sprite):
         self.damaged = False
         self.visible = True
         self.invisibility_timer = 0
+
+        self.commands = queue.Queue()   # Here will be put commands received from the server
+
+        # Starting new thread responsible for handling connection with the command server
+        self.commands_thread_number = 0
+        self.quit_event = threading.Event()  # It will help to terminate command thread after closing PyGame window
+        self.start_command_thread()
+
+    def listen_for_commands_from_server(self):
+        """
+        Connects to the local server and waits for commands. Received commands are put in the queue.
+        To be run in separate thread.
+
+        :return: none
+        """
+        try:
+            self.client_socket = connect_to_server('EnvSimulator')
+            receive_commands_from_server(self.client_socket, self.commands, self.quit_event)
+        except Exception as e:
+            print(f'Command thread failed because {e}')
+            # Here command thread is terminated
+            self.commands_thread_number -= 1
+
+    def start_command_thread(self):
+        """
+        Starts command thread - reconnect to the server.
+
+        :return: none
+        """
+        self.commands_thread_number += 1
+        self.commands_thread = threading.Thread(target=self.listen_for_commands_from_server)
+        self.commands_thread.start()
+
+    def get_commands(self):
+        """
+        TODO: decide what to do with received command; look - get_keys()
+        PyGame fps = 60
+        camera fps = 25-30
+        Receives about 26 commands per second
+
+        :return:
+        """
+        if not self.commands.empty():
+            print(self.commands.get())
 
     def get_keys(self):
         """
@@ -120,13 +167,9 @@ class Player(pg.sprite.Sprite):
         :return: none
         """
 
-        # Get input
+        # Get input - steering with keyboard or camera
         self.get_keys()
-        ####################################################################
-        # Good place to ask for input from the class storing hand commends received from the server
-        # print(round(time.time() * 1000))
-        # It takes 14-18 milliseconds
-        ####################################################################
+        self.get_commands()
 
         # Rotation
         self.rot = (self.rot + self.rot_speed * self.game.dt) % 360

@@ -1,14 +1,14 @@
 import cv2
 import time
 from hand_tracking_module import HandDetector
-from client import connect_to_server, send_string_message
+from client import connect_to_server, send_string_message, send_object_message
 
 
 def main():
     prev_time = 0
     curr_time = 0
     cap = cv2.VideoCapture(0)
-    detector = HandDetector()
+    detector = HandDetector(max_hands=1, detection_con=0.7)
 
     client_socket = connect_to_server('RoboPies')
 
@@ -18,7 +18,8 @@ def main():
         landmark_positions = detector.find_position(img, draw=False)
         if len(landmark_positions) != 0:
             print(landmark_positions[4])
-            send_string_message(client_socket, str(landmark_positions[4]))
+            # send_string_message(client_socket, str(landmark_positions[4]))
+            send_object_message(client_socket, {'landmarks': landmark_positions[4], 'time': time.time()})
 
         curr_time = time.time()
         fps = 1 / (curr_time - prev_time)

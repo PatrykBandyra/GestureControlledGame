@@ -237,6 +237,7 @@ class Game:
 
         :return: none
         """
+        self.player.quit_event.set()    # Helps to close connection with the server
         pg.quit()
         sys.exit()
 
@@ -374,6 +375,10 @@ class Game:
                     self.paused = not self.paused
                 if event.key == pg.K_n:
                     self.night = not self.night
+                if event.key == pg.K_j:
+                    # Press 'J' to reconnect to the server
+                    if self.player.commands_thread_number == 0:
+                        self.player.start_command_thread()
 
             # Weapon change
             if event.type == pg.KEYUP:

@@ -2,15 +2,22 @@ import socket
 import sys
 import errno
 import pickle
+import queue
 
 
-# default configuration
+# Default configuration
 HEADER_LENGTH = 10
 IP = '127.0.0.1'
 PORT = 1234
 
 
 def connect_to_server(client_name: str):
+    """
+    Connects to the local server.
+
+    :param client_name: string
+    :return: client's socket
+    """
     client_name = client_name.encode('utf-8')
     client_name_header = f'{len(client_name):<{HEADER_LENGTH}}'.encode('utf-8')
 
@@ -18,7 +25,7 @@ def connect_to_server(client_name: str):
     client_socket.connect((IP, PORT))
     client_socket.setblocking(False)
 
-    client_socket.send(client_name_header + client_name)    # send id to the server
+    client_socket.send(client_name_header + client_name)    # Send id to the server
 
     return client_socket
 
@@ -65,11 +72,14 @@ def receive_messages(client_socket):
             sys.exit()
 
 
-def receive_binary_messages(client_socket):
+def receive_commands_from_server(client_socket, fifo_buffer, quit_event):
+
+    # It will quit if server is down or PyGame window is closed and it receives one last message to end the loop
+
     while True:
         try:
             while True:
-                # receive things
+                # Receive things
                 username_header = client_socket.recv(HEADER_LENGTH)
                 if not len(username_header):
                     print('Connection closed by the server')
@@ -83,7 +93,10 @@ def receive_binary_messages(client_socket):
                 message = client_socket.recv(message_length)
                 message = pickle.loads(message)
 
-                print(f"{username} > {message}")
+                fifo_buffer.put(message)
+
+                if quit_event.isSet():
+                    sys.exit()
 
         except IOError as e:
             if e.errno != errno.EAGAIN and e.errno != errno.EWOULDBLOCK:
