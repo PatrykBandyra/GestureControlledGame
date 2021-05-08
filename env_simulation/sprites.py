@@ -1,3 +1,5 @@
+import time
+
 import pygame as pg
 from random import uniform, choice, randint, random
 from settings import *
@@ -120,6 +122,11 @@ class Player(pg.sprite.Sprite):
 
         # Get input
         self.get_keys()
+        ####################################################################
+        # Good place to ask for input from the class storing hand commends received from the server
+        # print(round(time.time() * 1000))
+        # It takes 14-18 milliseconds
+        ####################################################################
 
         # Rotation
         self.rot = (self.rot + self.rot_speed * self.game.dt) % 360
