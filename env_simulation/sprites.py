@@ -8,6 +8,14 @@ vec = pg.math.Vector2
 
 
 def collide_with_walls(sprite, group, dir):
+    """
+    Deals with sprite's collisions with walls.
+
+    :param sprite:
+    :param group: walls
+    :param dir: which direction is tested
+    :return: none
+    """
     if dir == 'x':
         hits = pg.sprite.spritecollide(sprite, group, False, collide_hit_rect)
         if hits:
@@ -53,6 +61,11 @@ class Player(pg.sprite.Sprite):
         self.invisibility_timer = 0
 
     def get_keys(self):
+        """
+        Player's actions. Some are also in Game.events().
+
+        :return: none
+        """
         self.rot_speed = 0
         self.vel = vec(0, 0)
         keys = pg.key.get_pressed()
@@ -63,11 +76,16 @@ class Player(pg.sprite.Sprite):
         if keys[pg.K_UP] or keys[pg.K_w]:
             self.vel = vec(PLAYER_SPEED, 0).rotate(-self.rot)
         if keys[pg.K_DOWN] or keys[pg.K_s]:
-            self.vel = vec(-PLAYER_SPEED/2, 0).rotate(-self.rot)
+            self.vel = vec(-PLAYER_SPEED/2, 0).rotate(-self.rot)    # down movement 2 times slower
         if keys[pg.K_SPACE] or keys[pg.K_v]:
             self.shoot()
 
     def shoot(self):
+        """
+        Spawns appropriate bullets. Deals with fire rate, spread, kickback of given weapon, sound and visual effects.
+
+        :return: none
+        """
         now = pg.time.get_ticks()
         if now - self.last_shot > WEAPONS[self.weapon]["rate"]:
             if self.ammo[self.weapon] > 0:
@@ -76,6 +94,7 @@ class Player(pg.sprite.Sprite):
                 dir = vec(1, 0).rotate(-self.rot)
                 pos = self.pos + BARREL_OFFSET.rotate(-self.rot)
                 self.vel = vec(-WEAPONS[self.weapon]["kickback"], 0).rotate(-self.rot)
+
                 for i in range(WEAPONS[self.weapon]["bullet_count"]):
                     spread = uniform(-WEAPONS[self.weapon]["spread"], WEAPONS[self.weapon]["spread"])
                     Bullet(self.game, pos, dir.rotate(spread), WEAPONS[self.weapon]["damage"])
@@ -93,14 +112,27 @@ class Player(pg.sprite.Sprite):
         self.damage_alpha = chain(DAMAGE_ALPHA * 3)
 
     def update(self):
+        """
+        Updates player's state: rotation, position, etc.
+
+        :return: none
+        """
+
+        # Get input
         self.get_keys()
+
+        # Rotation
         self.rot = (self.rot + self.rot_speed * self.game.dt) % 360
         self.image = pg.transform.rotate(self.game.player_image, self.rot)
+
+        # Damage
         if self.damaged:
             try:
                 self.image.fill((255, 0, 0, next(self.damage_alpha)), special_flags=pg.BLEND_RGBA_MULT)
             except:
                 self.damaged = False
+
+        # Position
         self.rect = self.image.get_rect()
         self.rect.center = self.pos
         self.pos += self.vel * self.game.dt
@@ -110,10 +142,18 @@ class Player(pg.sprite.Sprite):
         collide_with_walls(self, self.game.walls, 'y')
         self.rect.center = self.hit_rect.center
         now = pg.time.get_ticks()
+
+        # Invisibility potion behaviour
         if now - self.invisibility_timer > INVISIBILITY_TIME:
             self.visible = True
 
     def add_health(self, amount):
+        """
+        Adds HP to Player's health.
+
+        :param amount: HP
+        :return: none
+        """
         self.health += amount
         if self.health > PLAYER_HEALTH:
             self.health = PLAYER_HEALTH
@@ -143,6 +183,11 @@ class Mob(pg.sprite.Sprite):
         self.visited_targets = []
 
     def avoid_mobs(self):
+        """
+        Scatters mobs if they are too close to each other.
+
+        :return: none
+        """
         for mob in self.game.mobs:
             if mob != self:
                 dist = self.pos - mob.pos
@@ -150,24 +195,37 @@ class Mob(pg.sprite.Sprite):
                     self.acc += dist.normalize()
 
     def update_target(self):
+        """
+        If Mob does not follow the Player, it looks for a closest target to go to. Targets are points placed on map.
+
+        :return: none
+        """
         now = pg.time.get_ticks()
-        if (self.wander_target.x - 10 < self.pos.x < self.wander_target.x + 10 and \
+        if (self.wander_target.x - 10 < self.pos.x < self.wander_target.x + 10 and
                 self.wander_target.y - 10 < self.pos.y < self.wander_target.y + 10) or \
                 now - self.last_update > WANDER_TARGET_CHANGE_FREQ or self.vel == (0, 0):
             self.last_update = now
             closest_wander_target = choice(self.game.targets)
+
             for target in self.game.targets:
                 if target not in self.visited_targets:
                     target_vector = target - self.pos
                     distance = target_vector.x**2 + target_vector.y**2
                     if distance < (closest_wander_target.x**2 + closest_wander_target.y**2):
                         closest_wander_target = target
+
             self.wander_target = closest_wander_target
             self.visited_targets.append(self.wander_target)
-            if len(self.visited_targets) > 20:
+            if len(self.visited_targets) > 20:      # Remembers 20 visited targets
                 self.visited_targets.pop(0)
 
     def move(self, target_dist):
+        """
+        Deals with Mob's movement: rotation, acceleration, etc.
+
+        :param target_dist: vector
+        :return: none
+        """
         self.rot = target_dist.angle_to(vec(1, 0))
         self.image = pg.transform.rotate(self.game.mob_image, self.rot)
         self.rect = self.image.get_rect()
@@ -185,7 +243,13 @@ class Mob(pg.sprite.Sprite):
         self.rect.center = self.hit_rect.center
 
     def update(self):
+        """
+        Updates Mob's state.
+
+        :return: none
+        """
         target_dist = self.target.pos - self.pos
+
         # Chase the player
         if target_dist.length_squared() < DETECT_RADIUS**2 and self.game.player.visible:     # Better performance without extraction of a root
             if random() < 0.002:
@@ -195,12 +259,19 @@ class Mob(pg.sprite.Sprite):
             self.update_target()
             target_dist = self.wander_target - self.pos
             self.move(target_dist)
+
+        # Dead?
         if self.health <= 0:
             choice(self.game.zombie_hit_sounds).play()
             self.kill()
             self.game.map_image.blit(self.game.splat, self.pos - vec(32, 32))
 
     def draw_health(self):
+        """
+        Draws health bar above Mob's head.
+
+        :return: none
+        """
         if self.health > 60:
             col = GREEN
         elif self.health > 30:
@@ -224,16 +295,25 @@ class Bullet(pg.sprite.Sprite):
         self.hit_rect = self.rect
         self.pos = vec(pos)
         self.rect.center = pos
-        # spread = uniform(-GUN_SPREAD, GUN_SPREAD)
         self.vel = dir * WEAPONS[game.player.weapon]["bullet_speed"] * uniform(0.9, 1.1)
         self.spawn_time = pg.time.get_ticks()
         self.damage = damage
 
     def update(self):
+        """
+        Updates Bullet's position.
+
+        :return: none
+        """
+        # Movement
         self.pos += self.vel * self.game.dt
         self.rect.center = self.pos
+
+        # Kill after collision
         if pg.sprite.spritecollideany(self, self.game.walls):
             self.kill()
+
+        # Kill after certain amount of time
         if pg.time.get_ticks() - self.spawn_time > WEAPONS[self.game.player.weapon]["bullet_lifetime"]:
             self.kill()
 
@@ -278,6 +358,11 @@ class MuzzleFlash(pg.sprite.Sprite):
         self.spawn_time = pg.time.get_ticks()
 
     def update(self):
+        """
+        Kills flash after certain amount of time.
+
+        :return: none
+        """
         if pg.time.get_ticks() - self.spawn_time > FLASH_DURATION:
             self.kill()
 
@@ -298,6 +383,11 @@ class BloodSplat(pg.sprite.Sprite):
         self.frame = 0
 
     def update(self):
+        """
+        Creates animation of blood splat.
+
+        :return: none
+        """
         now = pg.time.get_ticks()
         if pg.time.get_ticks() - self.last_update > BLOOD_FRAME_DURATION:
             self.last_update = now
@@ -329,7 +419,11 @@ class Item(pg.sprite.Sprite):
         self.dir = 1
 
     def update(self):
-        # Bobbing motion
+        """
+        Deals with Item's bobbing motion.
+
+        :return: none
+        """
         offset = BOB_RANGE * (self.tween(self.step/BOB_RANGE)-0.5)
         self.rect.centery = self.pos.y + offset * self.dir
         self.step += BOB_SPEED

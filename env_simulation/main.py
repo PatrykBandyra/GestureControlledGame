@@ -11,8 +11,8 @@ def collide_hit_rect(one, two):
     """
     Checks if 2 objects with hit rectangle collide.
 
-    :param one: sprite or player
-    :param two: sprite or player
+    :param one: sprite
+    :param two: sprite
     :return: bool
     """
     return one.hit_rect.colliderect(two.rect)
