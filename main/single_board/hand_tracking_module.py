@@ -60,15 +60,15 @@ class HandDetector:
                 x_list.append(cx)
                 y_list.append(cy)
                 self.landmark_positions.append([id, cx, cy])
-                if draw:
-                    cv2.circle(img, (cx, cy), 15, (255, 0, 255), cv2.FILLED)
 
             x_min, x_max = min(x_list), max(x_list)
             y_min, y_max = min(y_list), max(y_list)
             bbox = x_min, y_min, x_max, y_max
 
             if draw:
+                # hand
                 cv2.rectangle(img, (bbox[0]-20, bbox[1]-20), (bbox[2]+20, bbox[3]+20), (0, 255, 0), 2)
+                cv2.circle(img, ((x_max-x_min)//2+x_min, (y_max-y_min)//2+y_min), 30, (255, 0, 0), cv2.FILLED)
 
         return self.landmark_positions, bbox
 
@@ -76,7 +76,7 @@ class HandDetector:
         fingers = []
 
         # thumb
-        if self.landmark_positions[self.tip_ids[0]][1] > self.landmark_positions[self.tip_ids[0] - 1][1]:
+        if self.landmark_positions[self.tip_ids[0]][1] < self.landmark_positions[self.tip_ids[0] - 1][1]:
             fingers.append(1)
         else:
             fingers.append(0)
@@ -105,6 +105,19 @@ class HandDetector:
         length = math.hypot(x2 - x1, y2 - y1)
         return length, img, [x1, y1, x2, y2, cx, cy]
 
+    @staticmethod
+    def draw_grid(img, img_height, img_width):
+
+        # Vertical lines
+        cv2.line(img, (img_width//3, 0), (img_width//3, img_height), (0, 0, 255), 1)
+        cv2.line(img, ((img_width//3)*2, 0), ((img_width//3)*2, img_height), (0, 0, 255), 1)
+
+        # Horizontal lines
+        cv2.line(img, (0, img_height//3), (img_width, img_height//3), (0, 0, 255), 1)
+        cv2.line(img, (0, (img_height//3)*2), (img_width, (img_height//3)*2), (0, 0, 255), 1)
+
+        return img
+
 
 def main():
     prev_time = 0
@@ -114,10 +127,13 @@ def main():
 
     while True:
         success, img = cap.read()
+        img = cv2.flip(img, 1)
         img = detector.find_hands(img)
-        landmark_positions = detector.find_position(img, draw=False)
+        landmark_positions, bbox = detector.find_position_and_bbox(img, draw=True)
+        img = HandDetector.draw_grid(img)
         if len(landmark_positions) != 0:
             print(landmark_positions[4])
+            print(bbox)
 
         curr_time = time.time()
         fps = 1 / (curr_time - prev_time)
