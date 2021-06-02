@@ -83,7 +83,6 @@ def main():
                 # Interpret gestures
                 # Movement
                 interpreted_movement = interpret_hand_movement(bbox, img_width, img_height)
-                print(interpreted_movement)
 
                 # Actions
                 # Pointing finger up - one shot
@@ -103,8 +102,6 @@ def main():
                         was_shot = False
                     if fingers[2] != 1:
                         was_changed = False
-
-                print(player_action)
 
             # Sending orders to the server
             message_to_send = {'move': interpreted_movement, 'action': player_action}
