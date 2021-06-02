@@ -5,6 +5,10 @@ from client import connect_to_server, send_object_message
 from dataclasses import dataclass
 
 
+# SETTINGS
+SEND_TIME_INFO = True
+
+
 @dataclass
 class MovementField:
     x: float
@@ -57,7 +61,10 @@ def main():
 
     client_socket = connect_to_server('RoboPies')
 
+    # Actions specific variables
     player_action = ''
+    was_shot = False
+    was_changed = False
 
     while True:
         success, img = cap.read()
@@ -66,6 +73,9 @@ def main():
         img = detector.find_hands(img)
         landmark_positions, bbox = detector.find_position_and_bbox(img, draw=True)
         img = HandDetector.draw_grid(img, img_height, img_width)
+
+        interpreted_movement = ''
+
         if len(landmark_positions) != 0:
             # Check mode - clenched fist = interpret gestures, opened hand = ignore gestures
             fingers = detector.fingers_up()
@@ -76,27 +86,37 @@ def main():
                 print(interpreted_movement)
 
                 # Actions
-                # Thumb up - one shot
-                if fingers[0] == 1 and player_action != 'shoot':    ### bug????
+                # Pointing finger up - one shot
+                if fingers[1] == 1 and not was_shot:
                     player_action = 'shoot'
+                    was_shot = True
 
-                ### elif ... for more actions
+                # Middle finger up - weapon change
+                elif fingers[2] == 1 and not was_changed:
+                    player_action = 'change'
+                    was_changed = True
 
-                # If no action - reset
+                # Reset the action
                 else:
                     player_action = ''
-            print(player_action)
+                    if fingers[1] != 1:
+                        was_shot = False
+                    if fingers[2] != 1:
+                        was_changed = False
 
-            # 'move': '...', 'action: '...', 'time': '...''
-            send_object_message(client_socket, {'landmarks': landmark_positions[4], 'time': time.time()})
+                print(player_action)
+
+            # Sending orders to the server
+            message_to_send = {'move': interpreted_movement, 'action': player_action}
+            if SEND_TIME_INFO:
+                message_to_send['time'] = time.time()
+            send_object_message(client_socket, message_to_send)
 
         curr_time = time.time()
         fps = 1 / (curr_time - prev_time)
         prev_time = curr_time
         cv2.putText(img, str(int(fps)), (10, 70), cv2.FONT_HERSHEY_PLAIN, 3, (255, 0, 255), thickness=3)
 
-        ########################################################################################################################
-        # Delete if board without screen and keyboard
         cv2.imshow('Frame', img)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -105,8 +125,6 @@ def main():
     cap.release()
     cv2.destroyAllWindows()
 
-
-########################################################################################################################
 
 if __name__ == '__main__':
     main()

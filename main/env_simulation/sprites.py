@@ -99,15 +99,41 @@ class Player(pg.sprite.Sprite):
 
     def get_commands(self):
         """
-        TODO: decide what to do with received command; look - get_keys()
-        PyGame fps = 60
-        camera fps = 25-30
-        Receives about 26 commands per second
+        Make actions according to received order
 
-        :return:
+        :return: none
         """
         if not self.commands.empty():
-            print(self.commands.get())
+            received_command = self.commands.get()
+            speed_increase_factor = 1.5     # to compensate difference in fps between camera and Pygame simulation
+            # Movement
+            if received_command['move'] == 'up':
+                self.vel = vec(PLAYER_SPEED, 0).rotate(-self.rot) * speed_increase_factor
+            elif received_command['move'] == 'up-left':
+                self.vel = vec(PLAYER_SPEED, 0).rotate(-self.rot) * speed_increase_factor
+                self.rot_speed = PLAYER_ROT_SPEED * speed_increase_factor
+            elif received_command['move'] == 'up-right':
+                self.vel = vec(PLAYER_SPEED, 0).rotate(-self.rot) * speed_increase_factor
+                self.rot_speed = -PLAYER_ROT_SPEED * speed_increase_factor
+            elif received_command['move'] == 'left':
+                self.rot_speed = PLAYER_ROT_SPEED * speed_increase_factor
+            elif received_command['move'] == 'right':
+                self.rot_speed = -PLAYER_ROT_SPEED * speed_increase_factor
+            elif received_command['move'] == 'down':
+                self.vel = vec(-PLAYER_SPEED / 2, 0).rotate(-self.rot) * speed_increase_factor
+            elif received_command['move'] == 'down-left':
+                self.vel = vec(-PLAYER_SPEED / 2, 0).rotate(-self.rot) * speed_increase_factor
+                self.rot_speed = PLAYER_ROT_SPEED * speed_increase_factor
+            elif received_command['move'] == 'down-right':
+                self.vel = vec(-PLAYER_SPEED / 2, 0).rotate(-self.rot) * speed_increase_factor
+                self.rot_speed = -PLAYER_ROT_SPEED * speed_increase_factor
+
+            # Actions
+            if received_command['action'] == 'shoot':
+                self.shoot()
+            elif received_command['action'] == 'change':
+                self.change_weapon()
+
 
     def get_keys(self):
         """
@@ -125,7 +151,7 @@ class Player(pg.sprite.Sprite):
         if keys[pg.K_UP] or keys[pg.K_w]:
             self.vel = vec(PLAYER_SPEED, 0).rotate(-self.rot)
         if keys[pg.K_DOWN] or keys[pg.K_s]:
-            self.vel = vec(-PLAYER_SPEED/2, 0).rotate(-self.rot)    # down movement 2 times slower
+            self.vel = vec(-PLAYER_SPEED/2, 0).rotate(-self.rot)    # Down movement 2 times slower
         if keys[pg.K_SPACE] or keys[pg.K_v]:
             self.shoot()
 
@@ -155,6 +181,18 @@ class Player(pg.sprite.Sprite):
             else:
                 self.last_shot = now
                 self.game.effects_sounds["no_ammo"].play()
+
+
+
+    def change_weapon(self):
+        '''
+        Changes current weapon if any other is available
+        :return: none
+        '''
+        if len(self.weapons_list) > 1:
+            self.game.effects_sounds["weapon_change"].play()
+            self.weapon = next(self.weapon_iterator)
+
 
     def hit(self):
         self.damaged = True

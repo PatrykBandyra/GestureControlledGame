@@ -383,9 +383,7 @@ class Game:
             # Weapon change
             if event.type == pg.KEYUP:
                 if event.key == pg.K_c:
-                    if len(self.player.weapons_list) > 1:
-                        self.effects_sounds["weapon_change"].play()
-                        self.player.weapon = next(self.player.weapon_iterator)
+                    self.player.change_weapon()
 
     def show_start_screen(self):
         self.screen.fill(BLACK)
