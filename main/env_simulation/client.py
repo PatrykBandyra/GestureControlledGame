@@ -2,7 +2,8 @@ import socket
 import sys
 import errno
 import pickle
-import queue
+import time
+import matplotlib.pyplot as plt
 
 
 # Default configuration
@@ -42,11 +43,15 @@ def send_object_message(client_socket, message: object):
     client_socket.send(message_header + message)
 
 
-def receive_messages(client_socket):
+def show_lag_sender_server(client_socket, packages_num):
+    x_vals = []
+    y_vals = []
+    index = 0
+
     while True:
         try:
-            while True:
-                # receive things
+            while index != packages_num:
+                # Receive things
                 username_header = client_socket.recv(HEADER_LENGTH)
                 if not len(username_header):
                     print('Connection closed by the server')
@@ -57,9 +62,15 @@ def receive_messages(client_socket):
 
                 message_header = client_socket.recv(HEADER_LENGTH)
                 message_length = int(message_header.decode('utf-8').strip())
-                message = client_socket.recv(message_length).decode('utf-8')
+                message = client_socket.recv(message_length)
+                message = pickle.loads(message)
 
-                print(f"{username} > {message}")
+                lag_ms = (time.time_ns() - message["time"]) / 1_000_000
+                y_vals.append(lag_ms)
+                index += 1
+                x_vals.append(index)
+                print(f'Lag: {lag_ms} ms')
+
 
         except IOError as e:
             if e.errno != errno.EAGAIN and e.errno != errno.EWOULDBLOCK:
@@ -70,6 +81,13 @@ def receive_messages(client_socket):
         except Exception as e:
             print('General error', str(e))
             sys.exit()
+
+        break
+    plt.hist(y_vals)
+    plt.title('Histogram of delays between data sender and receiver')
+    plt.xlabel('Delay in ms')
+    plt.ylabel('Number of packages')
+    plt.show()
 
 
 def receive_commands_from_server(client_socket, fifo_buffer, quit_event):
