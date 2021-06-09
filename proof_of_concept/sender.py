@@ -10,7 +10,7 @@ def main():
     cap = cv2.VideoCapture(0)
     detector = HandDetector(max_hands=1, detection_con=0.7)
 
-    client_socket = connect_to_server('RoboPies')
+    client_socket = connect_to_server("RoboPies")
 
     while True:
         success, img = cap.read()
@@ -19,21 +19,27 @@ def main():
         if len(landmark_positions) != 0:
             print(landmark_positions[4])
             # send_string_message(client_socket, str(landmark_positions[4]))
-            send_object_message(client_socket, {'landmarks': landmark_positions[4], 'time': time.time()})
+            send_object_message(
+                client_socket, {"landmarks": landmark_positions[4], "time": time.time()}
+            )
 
         curr_time = time.time()
         fps = 1 / (curr_time - prev_time)
         prev_time = curr_time
-        cv2.putText(img, str(int(fps)), (10, 70), cv2.FONT_HERSHEY_PLAIN, 3, (255, 0, 255), thickness=3)
+        cv2.putText(
+            img, str(int(fps)), (10, 70), cv2.FONT_HERSHEY_PLAIN, 3, (255, 0, 255), thickness=3
+        )
 
-        cv2.imshow('Frame', img)
+        cv2.imshow("Frame", img)
 
-        if cv2.waitKey(1) & 0xFF == ord('q'):
+        if cv2.waitKey(1) & 0xFF == ord("q") or cv2.getWindowProperty(
+            "Frame", cv2.WND_PROP_VISIBLE
+        ) < 1:
             break
 
     cap.release()
     cv2.destroyAllWindows()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

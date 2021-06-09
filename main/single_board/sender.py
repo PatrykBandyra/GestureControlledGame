@@ -132,7 +132,9 @@ def main():
 
         cv2.imshow('Frame', img)
 
-        if cv2.waitKey(1) & 0xFF == ord('q'):
+        if cv2.waitKey(1) & 0xFF == ord("q") or cv2.getWindowProperty(
+            "Frame", cv2.WND_PROP_VISIBLE
+        ) < 1:
             if COLLECT_FPS_STAT:
                 print(f'Average FPS: {round(sum(fps_val)/len(fps_val), 2)}')
                 plt.plot(fps_val)
