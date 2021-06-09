@@ -1,5 +1,3 @@
-import math
-
 import cv2
 import time
 from hand_tracking_module import HandDetector

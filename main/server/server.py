@@ -1,10 +1,6 @@
 import socket
 import select
 
-"""
-TODO: As for now it resends messages in a loop. Do the threading if needed in the future.
-"""
-
 
 # default configuration
 HEADER_LENGTH = 10

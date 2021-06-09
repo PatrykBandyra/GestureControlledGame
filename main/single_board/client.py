@@ -1,8 +1,5 @@
 import socket
-import sys
-import errno
 import pickle
-import queue
 
 
 # Default configuration

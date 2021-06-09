@@ -1,7 +1,5 @@
 import queue
 import threading
-import time
-import pygame as pg
 from random import uniform, choice, randint, random
 from settings import *
 from main import collide_hit_rect

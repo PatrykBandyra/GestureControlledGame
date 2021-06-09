@@ -1,7 +1,5 @@
-import pygame as pg
 from settings import *
 import pytmx
-from collections import deque
 vec = pg.math.Vector2
 
 

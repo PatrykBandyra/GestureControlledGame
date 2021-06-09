@@ -1,12 +1,5 @@
 import cv2
 import mediapipe as mp
-import time
-import math
-
-
-"""
-TODO: Get rid of necessary methods.
-"""
 
 
 class HandDetector:
@@ -31,20 +24,6 @@ class HandDetector:
                 if draw:
                     self.mp_draw.draw_landmarks(img, hand_landmarks, self.mp_hands.HAND_CONNECTIONS)
         return img
-
-    def find_position(self, img, hand_num=0, draw=True):
-        self.landmark_positions = []
-        if self.results.multi_hand_landmarks:
-            my_hand = self.results.multi_hand_landmarks[hand_num]
-
-            for id, landmark in enumerate(my_hand.landmark):
-                height, width, channels = img.shape
-                cx, cy = int(landmark.x * width), int(landmark.y * height)
-                self.landmark_positions.append([id, cx, cy])
-                if draw:
-                    cv2.circle(img, (cx, cy), 15, (255, 0, 255), cv2.FILLED)
-
-        return self.landmark_positions
 
     def find_position_and_bbox(self, img, hand_num=0, draw=True):
         x_list = []
@@ -90,21 +69,6 @@ class HandDetector:
 
         return fingers
 
-    def find_distance(self, p1, p2, img, draw=True):
-
-        x1, y1 = self.landmark_positions[p1][1:]
-        x2, y2 = self.landmark_positions[p2][1:]
-        cx, cy = (x1 + x2) // 2, (y1 + y2) // 2
-
-        if draw:
-            cv2.circle(img, (x1, y1), 15, (255, 0, 255), cv2.FILLED)
-            cv2.circle(img, (x2, y2), 15, (255, 0, 255), cv2.FILLED)
-            cv2.line(img, (x1, y1), (x2, y2), (255, 0, 255), 3)
-            cv2.circle(img, (cx, cy), 10, (255, 0, 255), cv2.FILLED)
-
-        length = math.hypot(x2 - x1, y2 - y1)
-        return length, img, [x1, y1, x2, y2, cx, cy]
-
     @staticmethod
     def draw_grid(img, img_height, img_width):
 
@@ -117,37 +81,3 @@ class HandDetector:
         cv2.line(img, (0, (img_height//3)*2), (img_width, (img_height//3)*2), (0, 0, 255), 1)
 
         return img
-
-
-def main():
-    prev_time = 0
-    curr_time = 0
-    cap = cv2.VideoCapture(0)
-    detector = HandDetector()
-
-    while True:
-        success, img = cap.read()
-        img = cv2.flip(img, 1)
-        img = detector.find_hands(img)
-        landmark_positions, bbox = detector.find_position_and_bbox(img, draw=True)
-        img = HandDetector.draw_grid(img)
-        if len(landmark_positions) != 0:
-            print(landmark_positions[4])
-            print(bbox)
-
-        curr_time = time.time()
-        fps = 1 / (curr_time - prev_time)
-        prev_time = curr_time
-        cv2.putText(img, str(int(fps)), (10, 70), cv2.FONT_HERSHEY_PLAIN, 3, (255, 0, 255), thickness=3)
-
-        cv2.imshow('Frame', img)
-
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
-
-    cap.release()
-    cv2.destroyAllWindows()
-
-
-if __name__ == '__main__':
-    main()

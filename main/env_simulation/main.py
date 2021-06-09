@@ -1,10 +1,7 @@
-import pygame as pg
 import sys
-from settings import *
 from sprites import *
 from os import path, environ
 from tilemap import *
-from threading import Thread
 
 
 def collide_hit_rect(one, two):
