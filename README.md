@@ -1,4 +1,4 @@
-# University project
+# Gesture controlled game
 
 Description:
 
